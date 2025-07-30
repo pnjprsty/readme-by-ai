@@ -57,7 +57,6 @@ def generate_readme_with_llama(prompt_text: str):
     from groq import Groq
 
     client = Groq(api_key=os.getenv("GROQ_API_KEY"))
-
     full_response = ""
     try:
         stream = client.chat.completions.create(
@@ -94,11 +93,36 @@ if __name__ == "__main__":
     files = get_all_code_files(folder_path)
     print(f"📁 Ditemukan {len(files)} file yang relevan")
 
-    content = read_files(files)
-    print("📦 Mengirim ke OpenAI...")
+    semua_ringkasan = []
 
-    readme = generate_readme_with_llama(content)
+for file in files:
+    print(f"📄 Membaca dan mengirim: {file}")
+    try:
+        with open(file, "r", encoding="utf-8") as f:
+            isi = f.read()
 
-    with open("README.md", "w", encoding="utf-8") as out:
-        out.write(readme)
-    print("✅ README.md berhasil dibuat!")
+        prompt = f"Berikan ringkasan dan penjelasan singkat dari file berikut.\n\n# File: {file}\n\n{isi}"
+        ringkasan = generate_readme_with_llama(prompt)
+        semua_ringkasan.append(f"## {file}\n\n{ringkasan.strip()}")
+
+    except Exception as e:
+        print(f"⚠️ Gagal membaca {file}: {e}")
+
+print("📦 Menyusun ringkasan sementara...")
+
+# Gabungkan semua ringkasan
+ringkasan_gabungan = "# 📘 Ringkasan Proyek\n\n" + "\n\n---\n\n".join(semua_ringkasan)
+
+print("🧠 Meminta AI untuk merangkum ulang semua ringkasan...")
+
+# Kirim sekali lagi ke AI
+prompt_final = f"Berikut adalah ringkasan dari beberapa file dalam proyek ini.\nTolong buatkan README.md final yang rapi dan mudah dimengerti.\n\n{ringkasan_gabungan}"
+readme_akhir = generate_readme_with_llama(prompt_final)
+
+with open("README.md", "w", encoding="utf-8") as out:
+    out.write(readme_akhir.strip())
+
+print("✅ README.md berhasil dibuat!")
+
+
+
