@@ -88,6 +88,41 @@ def generate_readme_with_llama(prompt_text: str):
 
     return full_response
 
+def generate_summary_with_llama(prompt_text: str):
+    from groq import Groq
+
+    client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+    full_response = ""
+    try:
+        stream = client.chat.completions.create(
+            model="meta-llama/llama-4-scout-17b-16e-instruct",
+            messages=[
+                {"role": "system", "content": "Kamu adalah asisten yang membantu memahami kode dan meringkasnya sebelum dibuat README."},
+                {
+                "role": "user",
+                "content": (
+                    f"Ringkas kode ini sama summary jelas sebelum dibuat README:\n\n"
+                    f"{prompt_text}\n\n"
+                    "Tulis dalam bahasa Inggris."
+                )
+            }
+            ],
+            temperature=0.7,
+            max_tokens=2048,
+            top_p=1,
+            stream=True,
+        )
+
+        for chunk in stream:
+            if chunk.choices and chunk.choices[0].delta.content:
+                full_response += chunk.choices[0].delta.content
+
+    except Exception as e:
+        print("[❌] Gagal generate README:", str(e))
+        return ""
+
+    return full_response    
+
 if __name__ == "__main__":
     folder_path = "."  # Ganti dengan path proyek kamu
     files = get_all_code_files(folder_path)
